@@ -4,7 +4,7 @@ from typing import Any, Union, List
 
 from typeguard import typechecked
 from valid8 import validate
-
+from valid8 import ValidationError
 from validation.dataclasses import validate_dataclass
 from validation.regex import pattern
 
@@ -114,10 +114,13 @@ class Smartphone:
     quantity: Quantity
     description: Description= None
 
+    def is_equal(self,other):
+        return isinstance(other,Smartphone) and self.name.value==other.name.value and self.manufacturer.value==other.manufacturer.value
 
     @property
     def category(self) -> str:
         return 'Smartphone'
+
 
 @typechecked
 @dataclass(frozen=True,order=True)
@@ -129,6 +132,9 @@ class Computer:
     description: Description = None
 
 
+    def is_equal(self,other):
+
+        return isinstance(other,Computer) and self.name.value==other.name.value and self.manufacturer.value==other.manufacturer.value
 
     @property
     def category(self) -> str:
@@ -148,13 +154,23 @@ class ShoppingList:
 
     def add_smartphone(self,smartphone : Smartphone) -> None:
         validate('items', self.items(),  max_value=9)
+        if  self.there_are_duplicates(smartphone):
+            raise ValueError
         self.__items.append(smartphone)
 
     def add_computer(self,computer: Computer) -> None:
         validate('items', self.items(), max_value=9)
-       # for i in self.__items:
-        #    validate('new item', computer, custom={i.name.value!=computer.name.value or i.manufacturer.value!=computer.manufacturer.value})
+        if self.there_are_duplicates(computer):
+            raise ValueError
         self.__items.append(computer)
+
+
+    def there_are_duplicates(self,item) -> bool:
+
+        for i in self.__items:
+            if  item.is_equal(i) :
+                return True
+        return False
 
     def remove_item(self,index:int) -> None:
         validate('index', index, min_value=0, max_value=self.items()-1)

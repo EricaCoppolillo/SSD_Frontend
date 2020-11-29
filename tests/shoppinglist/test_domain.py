@@ -145,7 +145,7 @@ def test_shoppinglist_max_cardinality(computers, smartphones):
 def test_shoppinglist_no_computer_duplicates():
     shoppingList = ShoppingList()
     shoppingList.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(1)))
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         shoppingList.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(4)))
 
 
@@ -162,7 +162,7 @@ def test_shoppinglist_add_smartphones(smartphones):
 def test_shoppinglist_no_smartphone_duplicates():
     shoppingList = ShoppingList()
     shoppingList.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(1)))
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         shoppingList.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(4)))
 
 
