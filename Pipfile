@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+atomicwrites = "*"
+attrs = "*"
+colorama = "*"
+coverage = "*"
+dataclass-type-validator = "*"
+decopatch = "*"
+iniconfig = "*"
+makefun = "*"
+packaging = "*"
+pluggy = "*"
+py = "*"
+pyparsing = "*"
+pytest = "*"
+six = "*"
+toml = "*"
+typeguard = "*"
+valid8 = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
