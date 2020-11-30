@@ -1,38 +1,81 @@
+from getpass import getpass
+
 import csv
 import sys
 from pathlib import Path
 from typing import Tuple, Callable, Any
-import getpass
 import requests
 
 from valid8 import validate, ValidationError
 
-from shopping_list.domain import ShoppingList, Smartphone, Computer, Name, Manufacturer, Quantity, Price, Username, \
+from shopping_list.domain import ShoppingList, Smartphone, Computer, Name, Manufacturer, Quantity, Price, Description, \
+    Username, \
     Password, Email
-from shopping_list.menu import Menu, Description, Entry
+from shopping_list.menu import Menu, MenuDescription, Entry
 
 
 class App:
     __filename = Path(__file__).parent.parent / 'shoppingList.csv'
     __delimiter = ';'
     __logged = False
-    __key=None
+    __key = None
 
     def __init__(self):
-        self.__menu = Menu.Builder(Description('SHOPPING LIST'), auto_select=lambda: self.__print_items())\
-            .with_entry(Entry.create('1', 'Add Smartphone', on_selected=lambda: self.__add_smartphone()))\
-            .with_entry(Entry.create('2', 'Add Computer', on_selected=lambda: self.__add_computer()))\
-            .with_entry(Entry.create('3', 'Remove Item', on_selected=lambda: self.__remove_item()))\
-            .with_entry(Entry.create('4', 'Sort by Manifacturer', on_selected=lambda: self.__sort_by_manifacturer()))\
-            .with_entry(Entry.create('5', 'Sort by Price', on_selected=lambda: self.__sort_by_price()))\
-            .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True))\
-            .build()
+        self.__first_menu = self.init_first_menu()
+        self.__menu = self.__init_shopping_list_menu()
         self.__shoppinglist = ShoppingList()
+
+    def init_first_menu(self) -> Menu:
+        return Menu.Builder(MenuDescription('SIGN IN'), auto_select=lambda: print('Welcome!')) \
+            .with_entry(Entry.create('1', 'Login', is_logged=lambda: self.__try_login())) \
+            .with_entry(Entry.create('2', 'Register', on_selected=lambda: self.__try_register(), is_logged=lambda: True)) \
+            .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
+            .build()
+
+    def __init_shopping_list_menu(self) -> Menu:
+        return Menu.Builder(MenuDescription('SHOPPING LIST'), auto_select=lambda: self.__print_items()) \
+            .with_entry(Entry.create('1', 'Add Smartphone', on_selected=lambda: self.__add_smartphone())) \
+            .with_entry(Entry.create('2', 'Add Computer', on_selected=lambda: self.__add_computer())) \
+            .with_entry(Entry.create('3', 'Remove Item', on_selected=lambda: self.__remove_item())) \
+            .with_entry(Entry.create('4', 'Change quantity', on_selected=lambda: self.__change_quantity())) \
+            .with_entry(Entry.create('5', 'Sort by Manufacturer', on_selected=lambda: self.__sort_by_manufacturer())) \
+            .with_entry(Entry.create('6', 'Sort by Price', on_selected=lambda: self.__sort_by_price())) \
+            .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
+            .build()
+
+    @staticmethod
+    def __retrieve_key(res):
+        json = res.json()
+        return json['key']
+
+    def __try_login(self) -> bool:
+        username = self.__read("Username", Username)
+        password = self.__read("Password", Password)
+
+        # res = requests.post(url=f'{api_server}/auth/login/', data={'username': username, 'password': password})
+        # if res.status_code != 200:
+        #     return False
+
+        # App.retrieve_key(res)
+
+        return True
+
+
+    def __try_register(self) -> None:
+        username = self.__read("Username", Username)
+        email = self.__read("Email", Email)
+        password = self.__read("Password", Password)
+
+        # res = .../ the user get authenticated
+        #App.retrieve_key(res)
+
+        return True
+
 
     def __print_items(self) -> None:
         print_sep = lambda: print('-' * 200)
         print_sep()
-        fmt = '%3s %-10s %-30s %-30s %10s %50s'
+        fmt = '%3s %-30s %-30s %-30s %10s %50s'
         print(fmt % ('#', 'NAME', 'MANUFACTURER', 'PRICE', 'QUANTITY', 'DESCRIPTION'))
         print_sep()
         for index in range(self.__shoppinglist.items()):
@@ -57,15 +100,30 @@ class App:
             validate('value', int(value), min_value=0, max_value=self.__shoppinglist.items())
             return int(value)
 
-        index = self.__read('Index (0 to cancel)', builder)
+        index = self.__read('Index (0 to cancel operation)', builder)
         if index == 0:
-            print('Cancelled!')
+            print('Operation cancelled!')
             return
         self.__shoppinglist.remove_item(index - 1)
         self.__save()
         print('Item removed!')
 
-    def __sort_by_manifacturer(self) -> None:
+    def __change_quantity(self) -> None:
+        def builder(value: str) -> int:
+            validate('value', int(value), min_value=0, max_value=self.__shoppinglist.items())
+            return int(value)
+
+        index = self.__read('Index (0 to cancel operation)', builder)
+        if index == 0:
+            print('Operation cancelled!')
+            return
+
+        quantity = self.__read('New Quantity', Quantity.cast)
+        self.__shoppinglist.change_quantity(index - 1, quantity)
+        self.__save()
+        print('Quantity changed!')
+
+    def __sort_by_manufacturer(self) -> None:
         self.__shoppinglist.sort_by_manufacturer()
         self.__save()
 
@@ -80,7 +138,8 @@ class App:
             print(e)
             print('Continuing with an empty list of item...')
 
-        self.__menu.run()
+        while not self.__first_menu.run() == (True, False):
+            self.__menu.run()
 
     def run(self) -> None:
         try:
@@ -103,7 +162,7 @@ class App:
 
                 manufacturer = Manufacturer(row[2])
 
-                price = Price.create(Price.parse(row[3]).euro,Price.parse(row[3]).cents)
+                price = Price.create(Price.parse(row[3]).euro, Price.parse(row[3]).cents)
 
                 quantity = Quantity(int(row[4]))
 
@@ -120,13 +179,18 @@ class App:
             writer = csv.writer(file, delimiter=self.__delimiter, lineterminator='\n')
             for index in range(self.__shoppinglist.items()):
                 item = self.__shoppinglist.item(index)
-                writer.writerow([item.category, item.name, item.manufacturer, item.price, item.quantity, item.description])
+                writer.writerow(
+                    [item.category, item.name, item.manufacturer, item.price, item.quantity, item.description])
 
     @staticmethod
     def __read(prompt: str, builder: Callable) -> Any:
         while True:
             try:
-                line = input(f'{prompt}: ')
+                if prompt != 'Password':
+                    line = input(f'{prompt}: ')
+                else:
+                    line = input(f'{prompt}: ')
+                    # line = getpass(f'{prompt}: ')
                 res = builder(line.strip())
                 return res
             except (TypeError, ValueError, ValidationError) as e:
@@ -138,38 +202,20 @@ class App:
         quantity = self.__read('Quantity', Quantity.cast)
         price = self.__read('Price', Price.parse)
         description = self.__read('Description', Description)
-        return item, manufacturer, price,quantity, description
+        return item, manufacturer, price, quantity, description
+
 
 #######PARTE PER LA GESTIONE DEL LOGIN/REGISTRAZIONE#######
 
 api_server = 'http://localhost:8000/api/v1'
 
 
-def new_menu(self):
-        self.__menu = Menu.Builder(Description('SHOPPING LIST'), auto_select=lambda: self.__print_items())\
-        .with_entry(Entry.create('1', 'Login', on_selected=lambda: self.__try_login()))\
-        .with_entry(Entry.create('2', 'Register', on_selected=lambda: self.__try_register())) \
-        .build()
+# 3. Exit
 
-
-
-def __try_login(self):
-    username=self.__read("Username",Username)
-    password=self.__read("Password",Password)
-    res = requests.post(url=f'{api_server}/auth/login/', data={'username': username, 'password': password})
-    if res.status_code != 200:
-        __logged=False
-    json = res.json()
-    key=json['key']
-    __logged=True
-
-def __try_register(self):
-    username = self.__read("Username", Username)
-    email = self.__read("Email", Email)
-    password = self.__read("Password", Password)
 
 def main(name: str):
     if name == '__main__':
         App().run()
+
 
 main(__name__)

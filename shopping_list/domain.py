@@ -12,21 +12,20 @@ from validation.regex import pattern
 @typechecked
 @dataclass(frozen=True, order=True)
 class Name:
-
-    value:str
+    value: str
 
     def __post_init__(self):
         validate_dataclass(self)
-        validate('value',self.value,min_len=1,max_len=25,custom=pattern(r'[A-Za-z0-9 \-\_]+'))
+        validate('value', self.value, min_len=1, max_len=25, custom=pattern(r'[A-Za-z0-9 \-\_]+'))
 
     def __str__(self):
         return self.value
 
-@typechecked
-@dataclass(frozen=True,order=True)
-class Manufacturer:
 
-    value:str
+@typechecked
+@dataclass(frozen=True, order=True)
+class Manufacturer:
+    value: str
 
     def __post_init__(self):
         validate_dataclass(self)
@@ -35,10 +34,10 @@ class Manufacturer:
     def __str__(self):
         return self.value
 
-@typechecked
-@dataclass(frozen=True,order=True)
-class Quantity:
 
+@typechecked
+@dataclass(frozen=True, order=True)
+class Quantity:
     value: int
 
     def __post_init__(self):
@@ -51,7 +50,6 @@ class Quantity:
     @staticmethod
     def cast(value: str) -> 'Quantity':
         return Quantity(int(value))
-
 
 
 @typechecked
@@ -73,7 +71,7 @@ class Price:
         return f'{self.value_in_cents // 100}.{self.value_in_cents % 100:02}'
 
     @staticmethod
-    def create(euro: int, cents: int=0) -> 'Price':
+    def create(euro: int, cents: int = 0) -> 'Price':
         validate('euro', euro, min_value=0, max_value=Price.__max_value // 100)
         validate('cents', cents, min_value=0, max_value=99)
         return Price(euro * 100 + cents, Price.__create_key)
@@ -97,31 +95,33 @@ class Price:
     def add(self, other: 'Price') -> 'Price':
         return Price(self.value_in_cents + other.value_in_cents, self.__create_key)
 
-@typechecked
-@dataclass(frozen=True,order=True)
-class Description:
 
+@typechecked
+@dataclass(frozen=True, order=True)
+class Description:
     value: str
 
     def __post_init__(self):
         validate_dataclass(self)
-        validate('value', self.value, min_len=20, max_len=100, custom=pattern( r'[A-Za-z0-9\_\-\(\)\.\,\;\&\:\=\è\'\" ]+'))
+        validate('value', self.value, min_len=20, max_len=100,
+                 custom=pattern(r'[A-Za-z0-9\_\-\(\)\.\,\;\&\:\=\è\'\" ]+'))
 
     def __str__(self):
         return str(self.value)
 
 
 @typechecked
-@dataclass(frozen=True,order=True)
+@dataclass(frozen=True, order=True)
 class Smartphone:
     name: Name
     manufacturer: Manufacturer
     price: Price
     quantity: Quantity
-    description: Description= None
+    description: Description = None
 
-    def is_equal(self,other):
-        return isinstance(other,Smartphone) and self.name.value==other.name.value and self.manufacturer.value==other.manufacturer.value
+    def is_equal(self, other):
+        return isinstance(other,
+                          Smartphone) and self.name.value == other.name.value and self.manufacturer.value == other.manufacturer.value
 
     @property
     def category(self) -> str:
@@ -129,7 +129,7 @@ class Smartphone:
 
 
 @typechecked
-@dataclass(frozen=True,order=True)
+@dataclass(frozen=True, order=True)
 class Computer:
     name: Name
     manufacturer: Manufacturer
@@ -137,59 +137,61 @@ class Computer:
     quantity: Quantity
     description: Description = None
 
-
-    def is_equal(self,other):
-
-        return isinstance(other,Computer) and self.name.value==other.name.value and self.manufacturer.value==other.manufacturer.value
+    def is_equal(self, other):
+        return isinstance(other,
+                          Computer) and self.name.value == other.name.value and self.manufacturer.value == other.manufacturer.value
 
     @property
     def category(self) -> str:
         return 'Computer'
 
+
 @typechecked
 @dataclass(frozen=True)
 class ShoppingList:
-    __items: List[Union[Smartphone,Computer]] = field(default_factory=list,init=False)
+    __items: List[Union[Smartphone, Computer]] = field(default_factory=list, init=False)
 
     def items(self) -> int:
         return len(self.__items)
 
-    def item(self,index: int) -> Union[Smartphone,Computer]:
-        validate('index',index,min_value=0, max_value=self.items()-1)
+    def item(self, index: int) -> Union[Smartphone, Computer]:
+        validate('index', index, min_value=0, max_value=self.items() - 1)
         return self.__items[index]
 
-    def add_smartphone(self,smartphone : Smartphone) -> None:
-        validate('items', self.items(),  max_value=9)
-        if  self.there_are_duplicates(smartphone):
+    def add_smartphone(self, smartphone: Smartphone) -> None:
+        validate('items', self.items(), max_value=9)
+        if self.there_are_duplicates(smartphone):
             raise ValueError
         self.__items.append(smartphone)
 
-    def add_computer(self,computer: Computer) -> None:
+    def add_computer(self, computer: Computer) -> None:
         validate('items', self.items(), max_value=9)
         if self.there_are_duplicates(computer):
             raise ValueError
         self.__items.append(computer)
 
-
-    def there_are_duplicates(self,item) -> bool:
-
+    def there_are_duplicates(self, item) -> bool:
         for i in self.__items:
-            if  item.is_equal(i) :
+            if item.is_equal(i):
                 return True
         return False
 
-    def remove_item(self,index:int) -> None:
-        validate('index', index, min_value=0, max_value=self.items()-1)
+    def remove_item(self, index: int) -> None:
+        validate('index', index, min_value=0, max_value=self.items() - 1)
         del self.__items[index]
 
-    def change_quantity(self,index:int, quantity:Quantity):
+    def change_quantity(self, index: int, quantity: Quantity):
         validate('index', index, min_value=0, max_value=self.items() - 1)
-        get_item=self.__items[index]
+        get_item = self.__items[index]
         self.remove_item(index)
         if get_item.category == "Smartphone":
-            self.add_smartphone(Smartphone(get_item.name,get_item.manufacturer,get_item.price,quantity,get_item.description))
+            self.__items.insert(index,
+                                Smartphone(get_item.name, get_item.manufacturer, get_item.price, quantity,
+                                           get_item.description))
         else:
-            self.add_computer(Computer(get_item.name, get_item.manufacturer, get_item.price, quantity, get_item.description))
+            self.__items.insert(index,
+                                Computer(get_item.name, get_item.manufacturer, get_item.price, quantity,
+                                         get_item.description))
 
     def sort_by_manufacturer(self) -> None:
         self.__items.sort(key=lambda x: x.manufacturer)
@@ -197,41 +199,41 @@ class ShoppingList:
     def sort_by_price(self) -> None:
         self.__items.sort(key=lambda x: x.price)
 
+
 @typechecked
-@dataclass(frozen=True,order=True)
+@dataclass(frozen=True, order=True)
 class Username:
-
     value: str
 
     def __post_init__(self):
         validate_dataclass(self)
-        validate('value', self.value, min_len=8, max_len=25, custom=pattern( r'[A-Za-z0-9]+'))
+        validate('value', self.value, min_len=8, max_len=25, custom=pattern(r'[A-Za-z0-9]+'))
 
     def __str__(self):
         return str(self.value)
 
+
 @typechecked
-@dataclass(frozen=True,order=True)
+@dataclass(frozen=True, order=True)
 class Password:
-
     value: str
 
     def __post_init__(self):
         validate_dataclass(self)
-        validate('value', self.value, min_len=8, max_len=20, custom=pattern( r'[A-Za-z0-9\?\!\.\^]+'))
+        validate('value', self.value, min_len=8, max_len=20, custom=pattern(r'[A-Za-z0-9\?\!\.\^]+'))
 
     def __str__(self):
         return str(self.value)
 
-@typechecked
-@dataclass(frozen=True,order=True)
-class Email:
 
+@typechecked
+@dataclass(frozen=True, order=True)
+class Email:
     value: str
 
     def __post_init__(self):
         validate_dataclass(self)
-        validate('value', self.value, min_len=8, max_len=20, custom=pattern( r'[A-Za-z0-9]+@[A-Za-z]+\.[a-z]'))
+        validate('value', self.value, min_len=8, max_len=20, custom=pattern(r'[A-Za-z0-9]+@[A-Za-z]+\.[a-z]+'))
 
     def __str__(self):
         return str(self.value)

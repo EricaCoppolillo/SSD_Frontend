@@ -5,7 +5,7 @@ from shopping_list.domain import Name, Manufacturer, Quantity, Description, Pric
 
 
 def test_name_format():
-    wrong_values = ['','APP%LE', '<script>alert()</script>', 'Ciao /90 30', 'A' * 26]
+    wrong_values = ['', 'APP%LE', '<script>alert()</script>', 'Ciao /90 30', 'A' * 26]
     for value in wrong_values:
         with pytest.raises(ValidationError):
             Name(value)
@@ -20,7 +20,6 @@ def test_manufacturer_format():
     for value in wrong_values:
         with pytest.raises(ValidationError):
             Manufacturer(value)
-
 
     correct_values = ['Honor', 'Xiaomi', 'Dolce&Gabbana', 'Gigabyte-Haorus', 'A' * 20]
     for value in correct_values:
@@ -47,8 +46,6 @@ def test_description_format():
     correct_values = ['Caratteristiche: CPU,GPU,Chipset', 'CPU=Snapdragon750PROplus',
                       'Il prodotto presenta dei "piccoli" segnali di deterioramento', '(Gigabyte)-HaorusPRO', 'A' * 100]
     for value in correct_values:
-        dvalue=Description(value).value
-        print(dvalue)
         assert Description(value).value == value
 
 
@@ -101,7 +98,7 @@ def computers():
 
 def test_computer_category(computers):
     for computer in computers:
-        computer.category == 'Computer'
+        assert computer.category == 'Computer'
 
 
 @pytest.fixture
@@ -119,54 +116,54 @@ def smartphones():
 
 def test_smartphone_category(smartphones):
     for smartphone in smartphones:
-        smartphone.category == 'Smartphone'
+        assert smartphone.category == 'Smartphone'
 
 
-def test_shoppinglist_add_computers(computers):
-    shoppingList = ShoppingList()
+def test_shopping_list_add_computers(computers):
+    shopping_list = ShoppingList()
     size = 0
     for computer in computers:
-        shoppingList.add_computer(computer)
+        shopping_list.add_computer(computer)
         size += 1
-        assert shoppingList.items() == size
-        assert shoppingList.item(size - 1) == computer
+        assert shopping_list.items() == size
+        assert shopping_list.item(size - 1) == computer
 
 
-def test_shoppinglist_max_cardinality(computers, smartphones):
-    shoppingList = ShoppingList()
+def test_shopping_list_max_cardinality(computers, smartphones):
+    shopping_list = ShoppingList()
     for computer in computers:
-        shoppingList.add_computer(computer)
+        shopping_list.add_computer(computer)
     for smartphone in smartphones:
-        shoppingList.add_smartphone(smartphone)
+        shopping_list.add_smartphone(smartphone)
     with pytest.raises(ValidationError):
-        shoppingList.add_computer(Computer(Name('Omen'), Manufacturer('HP'), Price.create(100), Quantity(1)))
+        shopping_list.add_computer(Computer(Name('Omen'), Manufacturer('HP'), Price.create(100), Quantity(1)))
 
 
-def test_shoppinglist_no_computer_duplicates():
-    shoppingList = ShoppingList()
-    shoppingList.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(1)))
+def test_shopping_list_no_computer_duplicates():
+    shopping_list = ShoppingList()
+    shopping_list.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(1)))
     with pytest.raises(ValueError):
-        shoppingList.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(4)))
+        shopping_list.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(4)))
 
 
-def test_shoppinglist_add_smartphones(smartphones):
-    shoppingList = ShoppingList()
+def test_shopping_list_add_smartphones(smartphones):
+    shopping_list = ShoppingList()
     size = 0
     for smartphone in smartphones:
-        shoppingList.add_smartphone(smartphone)
+        shopping_list.add_smartphone(smartphone)
         size += 1
-        assert shoppingList.items() == size
-        assert shoppingList.item(size - 1) == smartphone
+        assert shopping_list.items() == size
+        assert shopping_list.item(size - 1) == smartphone
 
 
-def test_shoppinglist_no_smartphone_duplicates():
-    shoppingList = ShoppingList()
-    shoppingList.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(1)))
+def test_shopping_list_no_smartphone_duplicates():
+    shopping_list = ShoppingList()
+    shopping_list.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(1)))
     with pytest.raises(ValueError):
-        shoppingList.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(4)))
+        shopping_list.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(4)))
 
 
-def test_shoppinglist_remove_item(smartphones, computers):
+def test_shopping_list_remove_item(smartphones, computers):
     shopping = ShoppingList()
     for computer in computers:
         shopping.add_computer(computer)
@@ -186,7 +183,7 @@ def test_shoppinglist_remove_item(smartphones, computers):
     assert shopping.items() == 0
 
 
-def test_shoppinglist_sort_by_manufacturer(smartphones, computers):
+def test_shopping_list_sort_by_manufacturer(smartphones, computers):
     shopping = ShoppingList()
     shopping.add_computer(computers[0])
     shopping.add_smartphone(smartphones[0])
@@ -194,7 +191,7 @@ def test_shoppinglist_sort_by_manufacturer(smartphones, computers):
     assert shopping.item(0) == smartphones[0]
 
 
-def test_shoppinglist_sort_by_price(smartphones, computers):
+def test_shopping_list_sort_by_price(smartphones, computers):
     shopping = ShoppingList()
     shopping.add_computer(computers[0])
     shopping.add_smartphone(smartphones[0])
@@ -202,7 +199,7 @@ def test_shoppinglist_sort_by_price(smartphones, computers):
     assert shopping.item(0) == smartphones[0]
 
 
-def test_shoppinglist_change_quantity(smartphones):
+def test_shopping_list_change_quantity(smartphones):
     shopping = ShoppingList()
     shopping.add_smartphone(smartphones[0])
     shopping.change_quantity(0, Quantity(1))
