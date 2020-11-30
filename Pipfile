@@ -21,6 +21,7 @@ six = "*"
 toml = "*"
 typeguard = "*"
 valid8 = "*"
+requests = "*"
 
 [dev-packages]
 
