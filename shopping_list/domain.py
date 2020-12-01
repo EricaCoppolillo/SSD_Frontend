@@ -112,6 +112,47 @@ class Description:
 
 @typechecked
 @dataclass(frozen=True, order=True)
+class Username:
+    value: str
+
+    def __post_init__(self):
+        validate_dataclass(self)
+        validate('value', self.value, min_len=8, max_len=25, custom=pattern(r'[A-Za-z0-9]+'))
+
+    def __str__(self):
+        return str(self.value)
+
+
+@typechecked
+@dataclass(frozen=True, order=True)
+class Email:
+    value: str
+
+    def __post_init__(self):
+        validate_dataclass(self)
+        validate('value', self.value, min_len=8, max_len=25,
+                 custom=pattern(r'[A-Za-z0-9]+[\.]*[A-Za-z]*@[A-Za-z]+\.[a-z]+'))
+
+    def __str__(self):
+        return str(self.value)
+
+
+@typechecked
+@dataclass(frozen=True, order=True)
+class Password:
+    value: str
+
+    def __post_init__(self):
+        validate_dataclass(self)
+        validate('value', self.value, min_len=6, max_len=25,
+                 custom=pattern(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!\#*?&])[A-Za-z\d@$!\#*?&]{6,}$'))
+
+    def __str__(self):
+        return str(self.value)
+
+
+@typechecked
+@dataclass(frozen=True, order=True)
 class Smartphone:
     name: Name
     manufacturer: Manufacturer
@@ -198,42 +239,3 @@ class ShoppingList:
 
     def sort_by_price(self) -> None:
         self.__items.sort(key=lambda x: x.price)
-
-
-@typechecked
-@dataclass(frozen=True, order=True)
-class Username:
-    value: str
-
-    def __post_init__(self):
-        validate_dataclass(self)
-        validate('value', self.value, min_len=8, max_len=25, custom=pattern(r'[A-Za-z0-9]+'))
-
-    def __str__(self):
-        return str(self.value)
-
-
-@typechecked
-@dataclass(frozen=True, order=True)
-class Password:
-    value: str
-
-    def __post_init__(self):
-        validate_dataclass(self)
-        validate('value', self.value, min_len=8, max_len=20, custom=pattern(r'[A-Za-z0-9\?\!\.\^]+'))
-
-    def __str__(self):
-        return str(self.value)
-
-
-@typechecked
-@dataclass(frozen=True, order=True)
-class Email:
-    value: str
-
-    def __post_init__(self):
-        validate_dataclass(self)
-        validate('value', self.value, min_len=8, max_len=20, custom=pattern(r'[A-Za-z0-9]+@[A-Za-z]+\.[a-z]+'))
-
-    def __str__(self):
-        return str(self.value)

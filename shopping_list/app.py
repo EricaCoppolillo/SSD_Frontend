@@ -28,7 +28,7 @@ class App:
     def init_first_menu(self) -> Menu:
         return Menu.Builder(MenuDescription('SIGN IN'), auto_select=lambda: print('Welcome!')) \
             .with_entry(Entry.create('1', 'Login', is_logged=lambda: self.__try_login())) \
-            .with_entry(Entry.create('2', 'Register', on_selected=lambda: self.__try_register(), is_logged=lambda: True)) \
+            .with_entry(Entry.create('2', 'Register', on_selected=lambda: self.__try_register())) \
             .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
             .build()
 
@@ -43,11 +43,6 @@ class App:
             .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
             .build()
 
-    @staticmethod
-    def __retrieve_key(res):
-        json = res.json()
-        return json['key']
-
     def __try_login(self) -> bool:
         username = self.__read("Username", Username)
         password = self.__read("Password", Password)
@@ -56,10 +51,11 @@ class App:
         # if res.status_code != 200:
         #     return False
 
+        # json = res.json()
+        # return json['key']
         # App.retrieve_key(res)
 
         return True
-
 
     def __try_register(self) -> None:
         username = self.__read("Username", Username)
@@ -67,10 +63,6 @@ class App:
         password = self.__read("Password", Password)
 
         # res = .../ the user get authenticated
-        #App.retrieve_key(res)
-
-        return True
-
 
     def __print_items(self) -> None:
         print_sep = lambda: print('-' * 200)

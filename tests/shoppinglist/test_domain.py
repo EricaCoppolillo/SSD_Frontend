@@ -1,7 +1,8 @@
 import pytest
 from valid8 import ValidationError
 
-from shopping_list.domain import Name, Manufacturer, Quantity, Description, Price, Smartphone, Computer, ShoppingList
+from shopping_list.domain import Name, Manufacturer, Quantity, Description, Price, Smartphone, Computer, ShoppingList, \
+    Username, Email, Password
 
 
 def test_name_format():
@@ -83,6 +84,40 @@ def test_price_add():
     assert Price.create(9, 99).add(Price.create(0, 1)) == Price.create(10)
 
 
+def test_username_format():
+    wrong_values = ['', '_ciao_', '<script>alert()</script>', 'uno spazio', 'è accentata', '%', 'A' * 26]
+    for value in wrong_values:
+        with pytest.raises(ValidationError):
+            Username(value)
+
+    correct_values = ['MARIO7777', 'MarioRossi', 'ciccio1997', 'A' * 25]
+    for value in correct_values:
+        assert Username(value).value == value
+
+
+def test_email_format():
+    wrong_values = ['', '_ciao@gmail.com', 'erica@libero290.com', '...@gmail.com', 'x<>@asdkjasld.89it', 'erica.coppolillo@', 'mario@gmail', 'x@gmx.', 'A' * 26]
+    for value in wrong_values:
+        with pytest.raises(ValidationError):
+            Email(value)
+
+    correct_values = ['marioRossi99@gmail.com', 'mario.rossi@libero.it', 'mario1999@gmail.com', 'A' * 20 + '@' + 'a.it']
+    for value in correct_values:
+        assert Email(value).value == value
+
+
+def test_password_format():
+    wrong_values = ['', 'password@', '<script>alert()</script>', '...asjdjadljas', 'ciaoCiao!=?',
+                    '19999akdoa', 'A' * 26]
+    for value in wrong_values:
+        with pytest.raises(ValidationError):
+            Password(value)
+
+    correct_values = ['marioRossi17?', 'MARIOROSSi2!', 'francescoRICCIO22#', 'A' * 10 + 'a' * 2 + '1' * 5 + '!' * 3]
+    for value in correct_values:
+        assert Password(value).value == value
+
+
 @pytest.fixture
 def computers():
     return [
@@ -117,6 +152,9 @@ def smartphones():
 def test_smartphone_category(smartphones):
     for smartphone in smartphones:
         assert smartphone.category == 'Smartphone'
+
+
+
 
 
 def test_shopping_list_add_computers(computers):
