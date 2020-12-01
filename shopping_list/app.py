@@ -1,4 +1,5 @@
 from getpass import getpass
+from wsgiref import headers
 
 import csv
 import sys
@@ -13,12 +14,15 @@ from shopping_list.domain import ShoppingList, Smartphone, Computer, Name, Manuf
     Password, Email
 from shopping_list.menu import Menu, MenuDescription, Entry
 
+api_server = 'http://localhost:8000/api/v1/'
+
 
 class App:
     __filename = Path(__file__).parent.parent / 'shoppingList.csv'
     __delimiter = '\t'
     __logged = False
     __key = None
+    __id_dictionary = []
 
     def __init__(self):
         self.__first_menu = self.init_first_menu()
@@ -27,8 +31,8 @@ class App:
 
     def init_first_menu(self) -> Menu:
         return Menu.Builder(MenuDescription('SIGN IN'), auto_select=lambda: print('Welcome!')) \
-            .with_entry(Entry.create('1', 'Login', is_logged=lambda: self.__try_login())) \
-            .with_entry(Entry.create('2', 'Register', on_selected=lambda: self.__try_register())) \
+            .with_entry(Entry.create('1', 'Login', is_logged=lambda: self.__login())) \
+            .with_entry(Entry.create('2', 'Register', on_selected=lambda: self.__register())) \
             .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
             .build()
 
@@ -43,48 +47,47 @@ class App:
             .with_entry(Entry.create('0', 'Exit', on_selected=lambda: print('Bye!'), is_exit=True)) \
             .build()
 
-    def __try_login(self) -> bool:
+    def __login(self) -> bool:
         username = self.__read("Username", Username)
         password = self.__read("Password", Password)
 
-        # res = requests.post(url=f'{api_server}/auth/login/', data={'username': username, 'password': password})
-        # if res.status_code != 200:
-        #     return False
+        res = requests.post(url=f'{api_server}auth/login/', data={'username': username, 'password': password})
+        if res.status_code != 200:
+            return False
 
-        # json = res.json()
-        # return json['key']
-        # App.retrieve_key(res)
-
+        self.__key = res.json()['key']
         return True
 
-    def __try_register(self) -> None:
+    def __register(self) -> None:
         username = self.__read("Username", Username)
         email = self.__read("Email", Email)
         password = self.__read("Password", Password)
 
-        # res = .../ the user get authenticated
+        requests.post(url=f'{api_server}auth/registration/', data={'username': username, 'email': email, 'password1': password,
+                                                                   'password2': password})
 
     def __print_items(self) -> None:
         print_sep = lambda: print('-' * 200)
         print_sep()
-        fmt = '%-3s %-30s %-30s %-30s %-30s %-10s %-50s'
+        fmt = '%-3s %-30s %-30s %-30s %-30s %-30s %-50s'
         print(fmt % ('#', 'CATEGORY', 'NAME', 'MANUFACTURER', 'PRICE', 'QUANTITY', 'DESCRIPTION'))
         print_sep()
         for index in range(self.__shoppinglist.items()):
             item = self.__shoppinglist.item(index)
-            print(fmt % (index + 1, item.category, item.name, item.manufacturer, item.price, item.quantity, item.description if item.description is not None else '-'))
+            print(fmt % (index + 1, item.category, item.name, item.manufacturer, item.price, item.quantity,
+                         item.description if item.description is not None else '-'))
         print_sep()
 
     def __add_smartphone(self) -> None:
         smartphone = Smartphone(*self.__read_item())
         self.__shoppinglist.add_smartphone(smartphone)
-        self.__save()
+        self.__save(smartphone)
         print('Smartphone added!')
 
     def __add_computer(self) -> None:
         computer = Computer(*self.__read_item())
         self.__shoppinglist.add_computer(computer)
-        self.__save()
+        self.__save(computer)
         print('Computer added!')
 
     def __remove_item(self) -> None:
@@ -96,8 +99,8 @@ class App:
         if index == 0:
             print('Operation cancelled!')
             return
+        self.__delete(self.__shoppinglist.item(index - 1))
         self.__shoppinglist.remove_item(index - 1)
-        self.__save()
         print('Item removed!')
 
     def __change_quantity(self) -> None:
@@ -112,21 +115,19 @@ class App:
 
         quantity = self.__read('New Quantity', Quantity.cast)
         self.__shoppinglist.change_quantity(index - 1, quantity)
-        self.__save()
+        self.__update(self.__shoppinglist.item(index - 1))
         print('Quantity changed!')
 
     def __sort_by_manufacturer(self) -> None:
         self.__shoppinglist.sort_by_manufacturer()
-        self.__save()
 
     def __sort_by_price(self) -> None:
         self.__shoppinglist.sort_by_price()
-        self.__save()
 
     def __run(self) -> None:
         while not self.__first_menu.run() == (True, False):
             try:
-                self.__load()
+                self.__fetch()
             except ValueError as e:
                 print('Continuing with an empty list of items...')
             self.__menu.run()
@@ -137,40 +138,98 @@ class App:
         except:
             print('Panic error!', file=sys.stderr)
 
-    def __load(self) -> None:
-        if not Path(self.__filename).exists():
-            return
+    # def __load_csv(self) -> None:
+    #     if not Path(self.__filename).exists():
+    #         return
+    #
+    #     with open(self.__filename) as file:
+    #         reader = csv.reader(file, delimiter=self.__delimiter)
+    #         for row in reader:
+    #             validate('row length', row, length=6)
+    #
+    #             typ = row[0]
+    #             name = Name(row[1])
+    #             manufacturer = Manufacturer(row[2])
+    #             price = Price.create(Price.parse(row[3]).euro, Price.parse(row[3]).cents)
+    #             quantity = Quantity(int(row[4]))
+    #
+    #             if row[5] == '':
+    #                 description = None
+    #             else:
+    #                 description = Description(row[5])
+    #
+    #             if typ == 'Smartphone':
+    #                 self.__shoppinglist.add_smartphone(Smartphone(name, manufacturer, price, quantity, description))
+    #             elif typ == 'Computer':
+    #                 self.__shoppinglist.add_computer(Computer(name, manufacturer, price, quantity, description))
+    #             else:
+    #                 raise ValueError('Unknown item type in shoppingList.csv')
 
-        with open(self.__filename) as file:
-            reader = csv.reader(file, delimiter=self.__delimiter)
-            for row in reader:
-                validate('row length', row, length=6)
+    def __fetch(self) -> None:
+        res = requests.get(url=f'{api_server}shopping-list/', headers={'Authorization': f'Token {self.__key}'})
 
-                typ = row[0]
-                name = Name(row[1])
-                manufacturer = Manufacturer(row[2])
-                price = Price.create(Price.parse(row[3]).euro, Price.parse(row[3]).cents)
-                quantity = Quantity(int(row[4]))
+        if res.status_code != 200:
+            return None
 
-                if row[5] == '':
-                    description = None
-                else:
-                    description = Description(row[5])
+        json = res.json()
+        for item in json:
+            validate('row length', item, length=7)
 
-                if typ == 'Smartphone':
-                    self.__shoppinglist.add_smartphone(Smartphone(name, manufacturer, price, quantity, description))
-                elif typ == 'Computer':
-                    self.__shoppinglist.add_computer(Computer(name, manufacturer, price, quantity, description))
-                else:
-                    raise ValueError('Unknown item type in shoppingList.csv')
+            item_id = int(item['id'])
+            name = Name(str(item['name']))
+            category = str(item['category'])
+            manufacturer = Manufacturer(str(item['manufacturer']))
+            price = Price.create(Price.parse(str(item['price'])).euro, Price.parse(str(item['price'])).cents)
+            quantity = Quantity(int(item['quantity']))
 
-    def __save(self) -> None:
-        with open(self.__filename, 'w') as file:
-            writer = csv.writer(file, delimiter=self.__delimiter, lineterminator='\n')
-            for index in range(self.__shoppinglist.items()):
-                item = self.__shoppinglist.item(index)
-                writer.writerow(
-                    [item.category, item.name, item.manufacturer, item.price, item.quantity, item.description])
+            self.__id_dictionary.append([item_id, name.value, manufacturer.value])
+
+            if item['description'] == '':
+                description = None
+            else:
+                description = Description(str(item['description']))
+
+            if category == 'Smartphone':
+                self.__shoppinglist.add_smartphone(Smartphone(name, manufacturer, price, quantity, description))
+            elif category == 'Computer':
+                self.__shoppinglist.add_computer(Computer(name, manufacturer, price, quantity, description))
+            else:
+                raise ValueError('Unknown item category in your shopping list')
+
+    def __save(self, item: Any) -> None:
+        req = requests.post(url=f'{api_server}shopping-list/add/',
+                              headers={'Authorization': f'Token {self.__key}'},
+                              data={'name': item.name.value, 'category': item.category,
+                                    'manufacturer': item.manufacturer.value, 'price': item.price.euro,
+                                    'quantity': item.quantity.value, 'description': item.description.value})
+
+        self.__id_dictionary.append([req.json()['id'], item.name.value, item.manufacturer.value])
+
+    def __update(self, item: Any) -> None:
+        for i in range(len(self.__id_dictionary)):
+            if (item.name.value, item.manufacturer.value) == (self.__id_dictionary[i][1], self.__id_dictionary[i][2]):
+
+                requests.patch(url=f'{api_server}shopping-list/edit/{self.__id_dictionary[i][0]}',
+                               headers={'Authorization': f'Token {self.__key}'}, data={'quantity': item.quantity.value})
+                break
+
+    def __delete(self, item: Any) -> None:
+        index = None
+        for i in range(len(self.__id_dictionary)):
+            if (item.name.value, item.manufacturer.value) == (self.__id_dictionary[i][1], self.__id_dictionary[i][2]):
+                requests.delete(url=f'{api_server}shopping-list/edit/{self.__id_dictionary[i][0]}',
+                               headers={'Authorization': f'Token {self.__key}'})
+                index = i
+                break
+        self.__id_dictionary.pop(index)
+
+    # def __save_csv(self) -> None:
+    #     with open(self.__filename, 'w') as file:
+    #         writer = csv.writer(file, delimiter=self.__delimiter, lineterminator='\n')
+    #         for index in range(self.__shoppinglist.items()):
+    #             item = self.__shoppinglist.item(index)
+    #             writer.writerow(
+    #                 [item.category, item.name, item.manufacturer, item.price, item.quantity, item.description])
 
     @staticmethod
     def __read(prompt: str, builder: Callable) -> Any:
@@ -196,14 +255,6 @@ class App:
         price = self.__read('Price', Price.parse)
         description = self.__read('Description', Description)
         return item, manufacturer, price, quantity, description
-
-
-#######PARTE PER LA GESTIONE DEL LOGIN/REGISTRAZIONE#######
-
-api_server = 'http://localhost:8000/api/v1'
-
-
-# 3. Exit
 
 
 def main(name: str):

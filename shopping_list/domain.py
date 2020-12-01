@@ -199,6 +199,9 @@ class ShoppingList:
         validate('index', index, min_value=0, max_value=self.items() - 1)
         return self.__items[index]
 
+    def clear(self) -> None:
+        self.__items.clear()
+
     def add_smartphone(self, smartphone: Smartphone) -> None:
         validate('items', self.items(), max_value=9)
         if self.there_are_duplicates(smartphone):
