@@ -104,7 +104,7 @@ class Description:
     def __post_init__(self):
         validate_dataclass(self)
         validate('value', self.value, min_len=20, max_len=100,
-                 custom=pattern(r'[A-Za-z0-9\_\-\(\)\.\,\;\&\:\=\è\'\" ]+'))
+                 custom=pattern(r'[A-Za-z0-9\_\-\(\)\.\,\;\&\:\=\è\'\"\! ]+'))
 
     def __str__(self):
         return str(self.value)

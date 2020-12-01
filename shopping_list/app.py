@@ -16,7 +16,7 @@ from shopping_list.menu import Menu, MenuDescription, Entry
 
 class App:
     __filename = Path(__file__).parent.parent / 'shoppingList.csv'
-    __delimiter = ';'
+    __delimiter = '\t'
     __logged = False
     __key = None
 
@@ -67,12 +67,12 @@ class App:
     def __print_items(self) -> None:
         print_sep = lambda: print('-' * 200)
         print_sep()
-        fmt = '%3s %-30s %-30s %-30s %10s %50s'
-        print(fmt % ('#', 'NAME', 'MANUFACTURER', 'PRICE', 'QUANTITY', 'DESCRIPTION'))
+        fmt = '%-3s %-30s %-30s %-30s %-30s %-10s %-50s'
+        print(fmt % ('#', 'CATEGORY', 'NAME', 'MANUFACTURER', 'PRICE', 'QUANTITY', 'DESCRIPTION'))
         print_sep()
         for index in range(self.__shoppinglist.items()):
             item = self.__shoppinglist.item(index)
-            print(fmt % (index + 1, item.name, item.manufacturer, item.price, item.quantity, item.description))
+            print(fmt % (index + 1, item.category, item.name, item.manufacturer, item.price, item.quantity, item.description if item.description is not None else '-'))
         print_sep()
 
     def __add_smartphone(self) -> None:
@@ -124,20 +124,18 @@ class App:
         self.__save()
 
     def __run(self) -> None:
-        try:
-            self.__load()
-        except ValueError as e:
-            print(e)
-            print('Continuing with an empty list of item...')
-
         while not self.__first_menu.run() == (True, False):
+            try:
+                self.__load()
+            except ValueError as e:
+                print('Continuing with an empty list of items...')
             self.__menu.run()
 
     def run(self) -> None:
         try:
             self.__run()
-        except Exception as e:
-            print(e, file=sys.stderr)
+        except:
+            print('Panic error!', file=sys.stderr)
 
     def __load(self) -> None:
         if not Path(self.__filename).exists():
@@ -149,20 +147,20 @@ class App:
                 validate('row length', row, length=6)
 
                 typ = row[0]
-
-                itemName = Name(row[1])
-
+                name = Name(row[1])
                 manufacturer = Manufacturer(row[2])
-
                 price = Price.create(Price.parse(row[3]).euro, Price.parse(row[3]).cents)
-
                 quantity = Quantity(int(row[4]))
 
-                description = Description(row[5])
+                if row[5] == '':
+                    description = None
+                else:
+                    description = Description(row[5])
+
                 if typ == 'Smartphone':
-                    self.__shoppinglist.add_smartphone(Smartphone(itemName, manufacturer, price, quantity, description))
+                    self.__shoppinglist.add_smartphone(Smartphone(name, manufacturer, price, quantity, description))
                 elif typ == 'Computer':
-                    self.__shoppinglist.add_computer(Computer(itemName, manufacturer, price, quantity, description))
+                    self.__shoppinglist.add_computer(Computer(name, manufacturer, price, quantity, description))
                 else:
                     raise ValueError('Unknown item type in shoppingList.csv')
 
@@ -183,7 +181,10 @@ class App:
                 else:
                     line = input(f'{prompt}: ')
                     # line = getpass(f'{prompt}: ')
-                res = builder(line.strip())
+                if len(line) == 0 and prompt == 'Description':
+                    res = None
+                else:
+                    res = builder(line.strip())
                 return res
             except (TypeError, ValueError, ValidationError) as e:
                 print(e)
