@@ -53,6 +53,7 @@ class App:
 
         res = requests.post(url=f'{api_server}auth/login/', data={'username': username, 'password': password})
         if res.status_code != 200:
+            print('This user does not exist!')
             return False
 
         self.__key = res.json()['key']
@@ -63,8 +64,10 @@ class App:
         email = self.__read("Email", Email)
         password = self.__read("Password", Password)
 
-        requests.post(url=f'{api_server}auth/registration/', data={'username': username, 'email': email, 'password1': password,
+        res = requests.post(url=f'{api_server}auth/registration/', data={'username': username, 'email': email, 'password1': password,
                                                                    'password2': password})
+        if res.status_code==400:
+            print('This user already exists!')
 
     def __print_items(self) -> None:
         print_sep = lambda: print('-' * 200)
@@ -75,20 +78,28 @@ class App:
         for index in range(self.__shoppinglist.items()):
             item = self.__shoppinglist.item(index)
             print(fmt % (index + 1, item.category, item.name, item.manufacturer, item.price, item.quantity,
-                         item.description if item.description is not None else '-'))
+                         item.description))
         print_sep()
 
     def __add_smartphone(self) -> None:
         smartphone = Smartphone(*self.__read_item())
-        self.__shoppinglist.add_smartphone(smartphone)
-        self.__save(smartphone)
-        print('Smartphone added!')
+        try:
+            self.__shoppinglist.add_smartphone(smartphone)
+            self.__save(smartphone)
+            print('Smartphone added!')
+        except ValueError:
+            print('Smartphone already present in the list!')
+
 
     def __add_computer(self) -> None:
         computer = Computer(*self.__read_item())
-        self.__shoppinglist.add_computer(computer)
-        self.__save(computer)
-        print('Computer added!')
+        try:
+            self.__shoppinglist.add_computer(computer)
+            self.__save(computer)
+            print('Computer added!')
+        except ValueError:
+            print('Computer already present in the list!')
+
 
     def __remove_item(self) -> None:
         def builder(value: str) -> int:
@@ -138,32 +149,7 @@ class App:
         except:
             print('Panic error!', file=sys.stderr)
 
-    # def __load_csv(self) -> None:
-    #     if not Path(self.__filename).exists():
-    #         return
-    #
-    #     with open(self.__filename) as file:
-    #         reader = csv.reader(file, delimiter=self.__delimiter)
-    #         for row in reader:
-    #             validate('row length', row, length=6)
-    #
-    #             typ = row[0]
-    #             name = Name(row[1])
-    #             manufacturer = Manufacturer(row[2])
-    #             price = Price.create(Price.parse(row[3]).euro, Price.parse(row[3]).cents)
-    #             quantity = Quantity(int(row[4]))
-    #
-    #             if row[5] == '':
-    #                 description = None
-    #             else:
-    #                 description = Description(row[5])
-    #
-    #             if typ == 'Smartphone':
-    #                 self.__shoppinglist.add_smartphone(Smartphone(name, manufacturer, price, quantity, description))
-    #             elif typ == 'Computer':
-    #                 self.__shoppinglist.add_computer(Computer(name, manufacturer, price, quantity, description))
-    #             else:
-    #                 raise ValueError('Unknown item type in shoppingList.csv')
+
 
     def __fetch(self) -> None:
         res = requests.get(url=f'{api_server}shopping-list/', headers={'Authorization': f'Token {self.__key}'})
@@ -179,15 +165,13 @@ class App:
             name = Name(str(item['name']))
             category = str(item['category'])
             manufacturer = Manufacturer(str(item['manufacturer']))
-            price = Price.create(Price.parse(str(item['price'])).euro, Price.parse(str(item['price'])).cents)
+            price = Price.create(int(int(item['price'])/100),int(item['price'])%100)
             quantity = Quantity(int(item['quantity']))
 
             self.__id_dictionary.append([item_id, name.value, manufacturer.value])
 
-            if item['description'] == '':
-                description = None
-            else:
-                description = Description(str(item['description']))
+
+            description = Description(str(item['description']))
 
             if category == 'Smartphone':
                 self.__shoppinglist.add_smartphone(Smartphone(name, manufacturer, price, quantity, description))
@@ -200,7 +184,7 @@ class App:
         req = requests.post(url=f'{api_server}shopping-list/add/',
                               headers={'Authorization': f'Token {self.__key}'},
                               data={'name': item.name.value, 'category': item.category,
-                                    'manufacturer': item.manufacturer.value, 'price': item.price.euro,
+                                    'manufacturer': item.manufacturer.value, 'price': item.price.value_in_cents,
                                     'quantity': item.quantity.value, 'description': item.description.value})
 
         self.__id_dictionary.append([req.json()['id'], item.name.value, item.manufacturer.value])
@@ -223,13 +207,6 @@ class App:
                 break
         self.__id_dictionary.pop(index)
 
-    # def __save_csv(self) -> None:
-    #     with open(self.__filename, 'w') as file:
-    #         writer = csv.writer(file, delimiter=self.__delimiter, lineterminator='\n')
-    #         for index in range(self.__shoppinglist.items()):
-    #             item = self.__shoppinglist.item(index)
-    #             writer.writerow(
-    #                 [item.category, item.name, item.manufacturer, item.price, item.quantity, item.description])
 
     @staticmethod
     def __read(prompt: str, builder: Callable) -> Any:
@@ -240,10 +217,8 @@ class App:
                 else:
                     line = input(f'{prompt}: ')
                     # line = getpass(f'{prompt}: ')
-                if len(line) == 0 and prompt == 'Description':
-                    res = None
-                else:
-                    res = builder(line.strip())
+
+                res = builder(line.strip())
                 return res
             except (TypeError, ValueError, ValidationError) as e:
                 print(e)

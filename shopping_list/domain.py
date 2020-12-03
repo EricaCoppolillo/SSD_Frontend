@@ -103,8 +103,8 @@ class Description:
 
     def __post_init__(self):
         validate_dataclass(self)
-        validate('value', self.value, min_len=20, max_len=100,
-                 custom=pattern(r'[A-Za-z0-9\_\-\(\)\.\,\;\&\:\=\è\'\"\! ]+'))
+        validate('value', self.value, max_len=100,
+                 custom=pattern(r'[A-Za-z0-9\_\-\(\)\.\,\;\&\:\=\è\'\"\! ]*'))
 
     def __str__(self):
         return str(self.value)
@@ -158,7 +158,7 @@ class Smartphone:
     manufacturer: Manufacturer
     price: Price
     quantity: Quantity
-    description: Description = None
+    description: Description
 
     def is_equal(self, other):
         return isinstance(other,
@@ -176,7 +176,7 @@ class Computer:
     manufacturer: Manufacturer
     price: Price
     quantity: Quantity
-    description: Description = None
+    description: Description
 
     def is_equal(self, other):
         return isinstance(other,
