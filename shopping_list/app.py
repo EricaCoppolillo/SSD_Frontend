@@ -50,12 +50,10 @@ class App:
     def __login(self) -> bool:
         username = self.__read("Username", Username)
         password = self.__read("Password", Password)
-
         res = requests.post(url=f'{api_server}auth/login/', data={'username': username, 'password': password})
         if res.status_code != 200:
             print('This user does not exist!')
             return False
-
         self.__key = res.json()['key']
         return True
 
@@ -79,6 +77,7 @@ class App:
             item = self.__shoppinglist.item(index)
             print(fmt % (index + 1, item.category, item.name, item.manufacturer, item.price, item.quantity,
                          item.description))
+
         print_sep()
 
     def __add_smartphone(self) -> None:
@@ -146,7 +145,8 @@ class App:
     def run(self) -> None:
         try:
             self.__run()
-        except:
+        except Exception as e:
+            print(e)
             print('Panic error!', file=sys.stderr)
 
 
@@ -154,13 +154,13 @@ class App:
     def __fetch(self) -> None:
         res = requests.get(url=f'{api_server}shopping-list/', headers={'Authorization': f'Token {self.__key}'})
 
+
         if res.status_code != 200:
             return None
-
         json = res.json()
         for item in json:
             validate('row length', item, length=7)
-
+            print(item['id'])
             item_id = int(item['id'])
             name = Name(str(item['name']))
             category = str(item['category'])

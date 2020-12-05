@@ -22,6 +22,8 @@ class Name:
         return self.value
 
 
+
+
 @typechecked
 @dataclass(frozen=True, order=True)
 class Manufacturer:

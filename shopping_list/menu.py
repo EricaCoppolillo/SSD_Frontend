@@ -92,7 +92,8 @@ class Menu:
                 entry = self.__key2entry[key]
                 entry.on_selected()
                 return entry.is_exit, entry.is_logged()
-            except (KeyError, TypeError, ValueError):
+            except (KeyError, TypeError, ValueError) as e:
+                print (e)
                 print('Invalid selection. Please, try again...')
 
     def run(self) -> tuple[bool, bool]:
