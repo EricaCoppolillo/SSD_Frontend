@@ -139,6 +139,9 @@ class App:
                 self.__fetch()
             except ValueError as e:
                 print('Continuing with an empty list of items...')
+            except RuntimeError:
+                print('Failed to connect to the server! Try later!')
+                return
             self.__menu.run()
 
     def run(self) -> None:
@@ -152,7 +155,8 @@ class App:
         res = requests.get(url=f'{api_server}shopping-list/', headers={'Authorization': f'Token {self.__key}'})
 
         if res.status_code != 200:
-            return None
+            raise RuntimeError()
+
         json = res.json()
         for item in json:
             validate('row length', item, length=7)
