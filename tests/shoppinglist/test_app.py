@@ -17,7 +17,7 @@ def mock_response_dict(status_code, data={}):
 def mock_response(status_code,data):
     res = Mock()
     res.status_code = status_code
-    res.json.return_value=[x.__dict__ for x in data]
+    res.json.return_value= data
     return res
 
 @patch('builtins.input', side_effect=['0'])
@@ -89,6 +89,72 @@ def test_app_shopping_list(mocked_print, mocked_input, mocked_requests_get, mock
     mocked_requests_post.assert_called()
     mocked_requests_get.assert_called()
     mocked_print.assert_any_call('*** SHOPPING LIST ***')
+    mocked_requests_get.assert_called_once_with(url='http://localhost:8000/api/v1/shopping-list/', headers={'Authorization': 'Token 3be7163c1baea2a220777a82ec7e59a4ef545f26'})
+    mocked_input.assert_called()
+
+
+
+@patch('requests.post', side_effect=[mock_response_dict(200, {'key': '3be7163c1baea2a220777a82ec7e59a4ef545f26'})])
+@patch('requests.get', side_effect=[mock_response(200,[{'id': 1,
+        'name': 'Redmi Note 8',
+        'category': 'Smartphone',
+        'manufacturer': 'Xiaomi',
+        'price': 90000,
+        'description': '',
+        'quantity': 2},
+                                                        {'id': 2,
+        'name': 'Macbook',
+        'category': 'Computer',
+        'manufacturer': 'Apple',
+        'price': 90000,
+        'description': '',
+        'quantity': 1}])])
+@patch('builtins.input', side_effect=['1', 'ciccioRiccio99', 'ciccioRiccio9!','0','0'])
+@patch('builtins.print')
+def test_app_shopping_list_load(mocked_print, mocked_input, mocked_requests_get, mocked_requests_post):
+    main('__main__')
+    mocked_print.assert_any_call('*** SIGN IN ***')
+    mocked_print.assert_any_call('1:\tLogin')
+    mocked_requests_post.assert_called()
+    mocked_requests_get.assert_called()
+    mocked_print.assert_any_call('*** SHOPPING LIST ***')
+    sys.stdout.write(str(mocked_print.mock_calls))
+    mocked_requests_get.assert_called_once_with(url='http://localhost:8000/api/v1/shopping-list/', headers={'Authorization': 'Token 3be7163c1baea2a220777a82ec7e59a4ef545f26'})
+    mocked_input.assert_called()
+
+
+@patch('requests.post', side_effect=[mock_response_dict(200, {'key': '3be7163c1baea2a220777a82ec7e59a4ef545f26'})])
+@patch('requests.get', side_effect=[mock_response(200,[{'id': 1,
+        'name': 'Redmi M3',
+        'category': 'Tablet',
+        'manufacturer': 'Xiaomi',
+        'price': 54300,
+        'description': '',
+        'quantity': 2}])])
+@patch('builtins.input', side_effect=['1', 'ciccioRiccio99', 'ciccioRiccio9!','0','0'])
+@patch('builtins.print')
+def test_app_shopping_list_load_unkown_category(mocked_print, mocked_input, mocked_requests_get, mocked_requests_post):
+    main('__main__')
+    mocked_print.assert_any_call('*** SIGN IN ***')
+    mocked_print.assert_any_call('1:\tLogin')
+    mocked_requests_post.assert_called()
+    mocked_requests_get.assert_called()
+    mocked_print.assert_any_call('*** SHOPPING LIST ***')
+    mocked_requests_get.assert_called_once_with(url='http://localhost:8000/api/v1/shopping-list/', headers={'Authorization': 'Token 3be7163c1baea2a220777a82ec7e59a4ef545f26'})
+    mocked_input.assert_called()
+
+@patch('requests.post', side_effect=[mock_response_dict(200, {'key': '3be7163c1baea2a220777a82ec7e59a4ef545f26'})])
+@patch('requests.get', side_effect=[mock_response_dict(201)])
+@patch('builtins.input', side_effect=['1', 'ciccioRiccio99', 'ciccioRiccio9!','0','0'])
+@patch('builtins.print')
+def test_app_shopping_fetch_None(mocked_print, mocked_input, mocked_requests_get, mocked_requests_post):
+    main('__main__')
+    mocked_print.assert_any_call('*** SIGN IN ***')
+    mocked_print.assert_any_call('1:\tLogin')
+    mocked_requests_post.assert_called()
+    mocked_requests_get.assert_called()
+    mocked_print.assert_any_call('*** SHOPPING LIST ***')
+    sys.stdout.write(str(mocked_print.mock_calls))
     mocked_requests_get.assert_called_once_with(url='http://localhost:8000/api/v1/shopping-list/', headers={'Authorization': 'Token 3be7163c1baea2a220777a82ec7e59a4ef545f26'})
     mocked_input.assert_called()
 

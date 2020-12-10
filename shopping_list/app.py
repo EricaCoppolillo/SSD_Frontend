@@ -158,8 +158,13 @@ class App:
         if res.status_code != 200:
             return None
         json = res.json()
+        print(json)
+        print('entro nella fetch')
         for item in json:
+            print('entro nel for')
+
             validate('row length', item, length=7)
+            print('sono validato')
             print(item['id'])
             item_id = int(item['id'])
             name = Name(str(item['name']))
