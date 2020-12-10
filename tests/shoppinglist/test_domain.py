@@ -39,7 +39,7 @@ def test_quantity_range():
 
 
 def test_description_format():
-    wrong_values = ['', 'a', '<script>alert()</script>', 'root/tree', '[:+%]{a}', 'A' * 101, 'A' * 19]
+    wrong_values = ['<script>alert()</script>', 'root/tree', '[:+%]{a}', 'A' * 101]
     for value in wrong_values:
         with pytest.raises(ValidationError):
             Description(value)
@@ -96,7 +96,8 @@ def test_username_format():
 
 
 def test_email_format():
-    wrong_values = ['', '_ciao@gmail.com', 'erica@libero290.com', '...@gmail.com', 'x<>@asdkjasld.89it', 'erica.coppolillo@', 'mario@gmail', 'x@gmx.', 'A' * 26]
+    wrong_values = ['', '_ciao@gmail.com', 'erica@libero290.com', '...@gmail.com', 'x<>@asdkjasld.89it',
+                    'erica.coppolillo@', 'mario@gmail', 'x@gmx.', 'A' * 26]
     for value in wrong_values:
         with pytest.raises(ValidationError):
             Email(value)
@@ -121,12 +122,12 @@ def test_password_format():
 @pytest.fixture
 def computers():
     return [
-        Computer(Name('Air 13'), Manufacturer('Xiaomi'), Price.create(101), Quantity(1)),
-        Computer(Name('Magibook 13'), Manufacturer('Huawei'), Price.create(8000), Quantity(1)),
+        Computer(Name('Air 13'), Manufacturer('Xiaomi'), Price.create(101), Quantity(1), Description("")),
+        Computer(Name('Magibook 13'), Manufacturer('Huawei'), Price.create(8000), Quantity(1), Description("")),
         Computer(Name('XS-500'), Manufacturer('Asus'), Price.create(16000), Quantity(1),
                  Description("Questo prodotto è bellissimo")),
-        Computer(Name('Swift 15'), Manufacturer('Acer'), Price.create(100), Quantity(1)),
-        Computer(Name('h250p'), Manufacturer('HP'), Price.create(8000), Quantity(1)),
+        Computer(Name('Swift 15'), Manufacturer('Acer'), Price.create(100), Quantity(1), Description("")),
+        Computer(Name('h250p'), Manufacturer('HP'), Price.create(8000), Quantity(1), Description("")),
 
     ]
 
@@ -139,22 +140,19 @@ def test_computer_category(computers):
 @pytest.fixture
 def smartphones():
     return [
-        Smartphone(Name('S20 Plus'), Manufacturer('Samsung'), Price.create(100), Quantity(3)),
-        Smartphone(Name('Iphone 10 pro'), Manufacturer('Apple'), Price.create(1007), Quantity(2)),
+        Smartphone(Name('S20 Plus'), Manufacturer('Samsung'), Price.create(100), Quantity(3), Description("")),
+        Smartphone(Name('Iphone 10 pro'), Manufacturer('Apple'), Price.create(1007), Quantity(2), Description("")),
         Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(590), Quantity(1),
                    Description("Questo prodotto è bellissimo")),
         Smartphone(Name('Find X'), Manufacturer('Oppo'), Price.create(16000), Quantity(1),
                    Description("Questo prodotto è bellissimo")),
-        Smartphone(Name('Legion Phone Duel'), Manufacturer('Lenovo'), Price.create(100), Quantity(1)),
+        Smartphone(Name('Legion Phone Duel'), Manufacturer('Lenovo'), Price.create(100), Quantity(1), Description("")),
     ]
 
 
 def test_smartphone_category(smartphones):
     for smartphone in smartphones:
         assert smartphone.category == 'Smartphone'
-
-
-
 
 
 def test_shopping_list_add_computers(computers):
@@ -174,14 +172,17 @@ def test_shopping_list_max_cardinality(computers, smartphones):
     for smartphone in smartphones:
         shopping_list.add_smartphone(smartphone)
     with pytest.raises(ValidationError):
-        shopping_list.add_computer(Computer(Name('Omen'), Manufacturer('HP'), Price.create(100), Quantity(1)))
+        shopping_list.add_computer(
+            Computer(Name('Omen'), Manufacturer('HP'), Price.create(100), Quantity(1), Description("")))
 
 
 def test_shopping_list_no_computer_duplicates():
     shopping_list = ShoppingList()
-    shopping_list.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(1)))
+    shopping_list.add_computer(
+        Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(1), Description("")))
     with pytest.raises(ValueError):
-        shopping_list.add_computer(Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(4)))
+        shopping_list.add_computer(
+            Computer(Name('Haorus'), Manufacturer('Gigabyte'), Price.create(100), Quantity(4), Description("")))
 
 
 def test_shopping_list_add_smartphones(smartphones):
@@ -196,9 +197,11 @@ def test_shopping_list_add_smartphones(smartphones):
 
 def test_shopping_list_no_smartphone_duplicates():
     shopping_list = ShoppingList()
-    shopping_list.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(1)))
+    shopping_list.add_smartphone(
+        Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(1), Description("")))
     with pytest.raises(ValueError):
-        shopping_list.add_smartphone(Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(4)))
+        shopping_list.add_smartphone(
+            Smartphone(Name('Velvet'), Manufacturer('LG'), Price.create(100), Quantity(4), Description("")))
 
 
 def test_shopping_list_remove_item(smartphones, computers):

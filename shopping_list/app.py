@@ -62,9 +62,10 @@ class App:
         email = self.__read("Email", Email)
         password = self.__read("Password", Password)
 
-        res = requests.post(url=f'{api_server}auth/registration/', data={'username': username, 'email': email, 'password1': password,
-                                                                   'password2': password})
-        if res.status_code==400:
+        res = requests.post(url=f'{api_server}auth/registration/',
+                            data={'username': username, 'email': email, 'password1': password,
+                                  'password2': password})
+        if res.status_code == 400:
             print('This user already exists!')
 
     def __print_items(self) -> None:
@@ -89,7 +90,6 @@ class App:
         except ValueError:
             print('Smartphone already present in the list!')
 
-
     def __add_computer(self) -> None:
         computer = Computer(*self.__read_item())
         try:
@@ -98,7 +98,6 @@ class App:
             print('Computer added!')
         except ValueError:
             print('Computer already present in the list!')
-
 
     def __remove_item(self) -> None:
         def builder(value: str) -> int:
@@ -149,32 +148,23 @@ class App:
             print(e)
             print('Panic error!', file=sys.stderr)
 
-
-
     def __fetch(self) -> None:
         res = requests.get(url=f'{api_server}shopping-list/', headers={'Authorization': f'Token {self.__key}'})
-
 
         if res.status_code != 200:
             return None
         json = res.json()
-        print(json)
-        print('entro nella fetch')
         for item in json:
-            print('entro nel for')
-
             validate('row length', item, length=7)
-            print('sono validato')
-            print(item['id'])
+
             item_id = int(item['id'])
             name = Name(str(item['name']))
             category = str(item['category'])
             manufacturer = Manufacturer(str(item['manufacturer']))
-            price = Price.create(int(int(item['price'])/100),int(item['price'])%100)
+            price = Price.create(int(int(item['price']) / 100), int(item['price']) % 100)
             quantity = Quantity(int(item['quantity']))
 
             self.__id_dictionary.append([item_id, name.value, manufacturer.value])
-
 
             description = Description(str(item['description']))
 
@@ -187,17 +177,16 @@ class App:
 
     def __save(self, item: Any) -> None:
         req = requests.post(url=f'{api_server}shopping-list/add/',
-                              headers={'Authorization': f'Token {self.__key}'},
-                              data={'name': item.name.value, 'category': item.category,
-                                    'manufacturer': item.manufacturer.value, 'price': item.price.value_in_cents,
-                                    'quantity': item.quantity.value, 'description': item.description.value})
+                            headers={'Authorization': f'Token {self.__key}'},
+                            data={'name': item.name.value, 'category': item.category,
+                                  'manufacturer': item.manufacturer.value, 'price': item.price.value_in_cents,
+                                  'quantity': item.quantity.value, 'description': item.description.value})
 
         self.__id_dictionary.append([req.json()['id'], item.name.value, item.manufacturer.value])
 
     def __update(self, item: Any) -> None:
         for i in range(len(self.__id_dictionary)):
             if (item.name.value, item.manufacturer.value) == (self.__id_dictionary[i][1], self.__id_dictionary[i][2]):
-
                 requests.patch(url=f'{api_server}shopping-list/edit/{self.__id_dictionary[i][0]}',
                                headers={'Authorization': f'Token {self.__key}'}, data={'quantity': item.quantity.value})
                 break
@@ -207,11 +196,10 @@ class App:
         for i in range(len(self.__id_dictionary)):
             if (item.name.value, item.manufacturer.value) == (self.__id_dictionary[i][1], self.__id_dictionary[i][2]):
                 requests.delete(url=f'{api_server}shopping-list/edit/{self.__id_dictionary[i][0]}',
-                               headers={'Authorization': f'Token {self.__key}'})
+                                headers={'Authorization': f'Token {self.__key}'})
                 index = i
                 break
         self.__id_dictionary.pop(index)
-
 
     @staticmethod
     def __read(prompt: str, builder: Callable) -> Any:
